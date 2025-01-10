@@ -11,6 +11,7 @@ use nom::IResult;
 pub enum Instr<'a> {
     Print(Vec<Expr<'a>>),
     Assign(Expr<'a>, Expr<'a>), // Assign(Ident, Expr)
+    Input(Expr<'a>, Expr<'a>), // Input(Expr, Ident)
     Rem
 }
 
@@ -35,6 +36,7 @@ impl Expr<'_> {
 
 impl Instr<'_> {
     pub fn parse(s: &str) -> IResult<&str, Instr, VerboseError<&str>> {
+        // TODO: Make this fail if there is any remaining input
         terminated(
             alt((
                 context(
@@ -62,6 +64,10 @@ impl Instr<'_> {
                     "rem statement",
                     map(tag_no_case("rem"), |_| Instr::Rem),
                 ),
+                context(
+                    "input statement",
+                   map(preceded(terminated(tag_no_case("input"), multispace1), separated_pair(terminated(Expr::parse, multispace0), terminated(tag(","), multispace0), Expr::parse)), |(expr1, expr2)| Instr::Input(expr1, expr2))
+                )
             )),
             multispace0,
         )(s)

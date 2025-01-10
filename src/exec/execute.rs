@@ -30,6 +30,13 @@ impl<'a> Instr<'a> {
                 state.vars.insert(ident, expr.eval(state));
             }
             Instr::Rem => {}
+            Instr::Input(expr1, Expr::Ident(ident)) => {
+                println!("{}", expr1.eval(state));
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input)?;
+                let input = input.trim().parse::<i64>()?;
+                state.vars.insert(ident, input);
+            }
             _ => return Err(anyhow::anyhow!("Invalid instruction: {:?}", self)),
         }
         Ok(())
