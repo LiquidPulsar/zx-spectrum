@@ -1,0 +1,3 @@
+LET a=10
+LET b=15
+PRINT a+b
