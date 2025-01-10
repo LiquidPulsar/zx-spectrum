@@ -1,4 +1,4 @@
-use crate::parser::{Instr, Expr};
+use crate::parser::{Expr, Instr};
 
 use super::State;
 
@@ -10,12 +10,22 @@ pub fn execute(instrs: Vec<Instr>) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-impl <'a> Instr<'a> {
-    fn execute <'b> (&self, state: &mut State<'b>) -> Result<(), anyhow::Error> where 'a: 'b {
+impl<'a> Instr<'a> {
+    fn execute<'b>(&self, state: &mut State<'b>) -> Result<(), anyhow::Error>
+    where
+        'a: 'b,
+    {
         match self {
-            Instr::Print(ident) => {
-                println!("{}", ident.eval(state));
-            },
+            Instr::Print(exprs) => {
+                println!(
+                    "{}",
+                    exprs
+                        .iter()
+                        .map(|expr| expr.eval(state).to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
             Instr::Assign(Expr::Ident(ident), expr) => {
                 state.vars.insert(ident, expr.eval(state));
             }
