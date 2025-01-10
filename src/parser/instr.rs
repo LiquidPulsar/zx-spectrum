@@ -3,16 +3,17 @@ use nom::bytes::complete::{tag, tag_no_case};
 use nom::character::complete::{alpha1, digit1, multispace0, multispace1};
 use nom::combinator::map;
 use nom::error::{context, VerboseError};
+use nom::multi::separated_list1;
 use nom::sequence::{preceded, separated_pair, terminated};
 use nom::IResult;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Instr<'a> {
-    Print(Expr<'a>),
+    Print(Vec<Expr<'a>>),
     Assign(Expr<'a>, Expr<'a>), // Assign(Ident, Expr)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expr<'a> {
     Ident(&'a str),
     Int(i64),
@@ -39,7 +40,7 @@ impl Instr<'_> {
                     "print statement",
                     preceded(
                         terminated(tag_no_case("print"), multispace1), // Terminated by a space
-                        map(Expr::parse, Instr::Print),
+                        map(separated_list1(terminated(tag(","), multispace0), Expr::parse), Instr::Print),
                     ),
                 ),
                 context(
@@ -59,5 +60,49 @@ impl Instr<'_> {
             )),
             multispace0,
         )(s)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_expr() {
+        assert_eq!(
+            Expr::parse("42"),
+            Ok((
+                "",
+                Expr::Int(42),
+            )),
+        );
+        assert_eq!(
+            Expr::parse("x"),
+            Ok((
+                "",
+                Expr::Ident("x"),
+            )),
+        );
+    }
+
+    #[test]
+    fn test_parse_instr() {
+        assert_eq!(
+            Instr::parse("print 42"),
+            Ok((
+                "",
+                Instr::Print(vec![Expr::Int(42)]),
+            )),
+        );
+        assert_eq!(
+            Instr::parse("let x = 42"),
+            Ok((
+                "",
+                Instr::Assign(Expr::Ident("x"), Expr::Int(42)),
+            )),
+        );
+        // Test malformed
+        assert!(Instr::parse("let x =").is_err());
     }
 }
