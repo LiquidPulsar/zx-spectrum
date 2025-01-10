@@ -1,0 +1,4 @@
+LET a=10
+LET b=15
+REM hello world
+PRINT a,b

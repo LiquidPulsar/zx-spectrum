@@ -11,6 +11,7 @@ use nom::IResult;
 pub enum Instr<'a> {
     Print(Vec<Expr<'a>>),
     Assign(Expr<'a>, Expr<'a>), // Assign(Ident, Expr)
+    Rem
 }
 
 #[derive(Debug, PartialEq)]
@@ -56,6 +57,10 @@ impl Instr<'_> {
                             |(ident, expr)| Instr::Assign(ident, expr),
                         ),
                     ),
+                ),
+                context(
+                    "rem statement",
+                    map(tag_no_case("rem"), |_| Instr::Rem),
                 ),
             )),
             multispace0,

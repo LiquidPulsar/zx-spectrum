@@ -29,7 +29,8 @@ impl<'a> Instr<'a> {
             Instr::Assign(Expr::Ident(ident), expr) => {
                 state.vars.insert(ident, expr.eval(state));
             }
-            _ => return Err(anyhow::anyhow!("Invalid instruction")),
+            Instr::Rem => {}
+            _ => return Err(anyhow::anyhow!("Invalid instruction: {:?}", self)),
         }
         Ok(())
     }
