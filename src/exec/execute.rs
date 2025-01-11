@@ -48,6 +48,10 @@ impl Expr<'_> {
         match self {
             Expr::Ident(ident) => *state.vars.get(ident).unwrap(),
             Expr::Int(i) => *i,
+            Expr::Add(expr1, expr2) => expr1.eval(state) + expr2.eval(state),
+            Expr::Sub(expr1, expr2) => expr1.eval(state) - expr2.eval(state),
+            Expr::Mul(expr1, expr2) => expr1.eval(state) * expr2.eval(state),
+            Expr::Div(expr1, expr2) => expr1.eval(state) / expr2.eval(state),
         }
     }
 }
