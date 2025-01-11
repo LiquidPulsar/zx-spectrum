@@ -5,8 +5,8 @@ use super::{State, Value};
 
 pub fn execute(instrs: Vec<Instr>) -> Result<(), anyhow::Error> {
     let mut state = State::default();
-    for instr in instrs {
-        instr.execute(&mut state)?;
+    while state.pc < instrs.len() {
+        instrs[state.pc].execute(&mut state)?;
     }
     Ok(())
 }
@@ -16,6 +16,7 @@ impl<'a> Instr<'a> {
     where
         'a: 'b,
     {
+        state.pc += 1; // Will be overwritten by Goto
         match self {
             Instr::Print(exprs) => {
                 println!(
@@ -32,6 +33,7 @@ impl<'a> Instr<'a> {
             Instr::Assign(Expr::Ident(ident), expr) => {
                 state.vars.insert(ident, expr.eval_to_int(state)?);
             }
+            Instr::Assign(expr, _ ) => return Err(anyhow!("(In assignment instr) Expected identifier, found: {:?}", expr)),
             Instr::Rem(_) => {}
             Instr::Input(expr1, Expr::Ident(ident)) => {
                 println!("{}", expr1.eval(state)?);
@@ -40,7 +42,8 @@ impl<'a> Instr<'a> {
                 let input = input.trim().parse::<i64>()?;
                 state.vars.insert(ident, input);
             }
-            _ => return Err(anyhow::anyhow!("Invalid instruction: {:?}", self)),
+            Instr::Input(_, expr) => return Err(anyhow!("(In input instr) Expected identifier, found: {:?}", expr)),
+            Instr::Goto(pc) => state.pc = (*pc / 10) - 1, // Convert from line number to 0-based index
         }
         Ok(())
     }

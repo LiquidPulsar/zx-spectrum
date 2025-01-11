@@ -47,11 +47,32 @@ mod tests {
     }
 
     #[test]
-    fn test_string() {
+    fn test_precedence_brackets() {
         assert_eq!(
-            Expr::parse("\"hello\""),
-            Ok(("", Expr::String("hello"),)),
+            Expr::parse("(1 + 2) * 3"),
+            Ok((
+                "",
+                Expr::Mul(
+                    Box::new(Expr::Add(Box::new(Expr::Int(1)), Box::new(Expr::Int(2)))),
+                    Box::new(Expr::Int(3))
+                )
+            )),
         );
+        assert_eq!(
+            Expr::parse("1 * (2 + 3)"),
+            Ok((
+                "",
+                Expr::Mul(
+                    Box::new(Expr::Int(1)),
+                    Box::new(Expr::Add(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))))
+                )
+            )),
+        );
+    }
+
+    #[test]
+    fn test_string() {
+        assert_eq!(Expr::parse("\"hello\""), Ok(("", Expr::String("hello"),)),);
 
         assert_eq!(
             Expr::parse("\"hello\" + \"world\""),
@@ -66,10 +87,7 @@ mod tests {
 
         assert_eq!(
             Instr::parse("PRINT 1, \"world!\""),
-            Ok((
-                "",
-                Instr::Print(vec![Expr::Int(1), Expr::String("world!")])
-            )),
+            Ok(("", Instr::Print(vec![Expr::Int(1), Expr::String("world!")]))),
         );
 
         assert_eq!(

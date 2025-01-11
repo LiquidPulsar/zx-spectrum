@@ -13,6 +13,7 @@ pub enum Instr<'a> {
     Assign(Expr<'a>, Expr<'a>), // Assign(Ident, Expr)
     Input(Expr<'a>, Expr<'a>),  // Input(Expr, Ident)
     Rem(&'a str),
+    Goto(usize),
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +36,7 @@ impl Expr<'_> {
 
     fn parse_atom(s: &str) -> ParseResult<Expr> {
         alt((
+            preceded(char('('), context("Parsing bracketed expr", cut(terminated(with_whitespaces(Expr::parse), context("closing paren", char(')')))))), // Parentheses
             Expr::parse_ident,
             map(digit1, |s: &str| Expr::Int(s.parse().unwrap())),
             preceded(
@@ -94,13 +96,17 @@ impl Instr<'_> {
                     "print statement",
                     preceded(
                         // Cut to avoid needless backtracking after committing
-                        // TODO: Can we cut at multispace1? i.e. can a line start with a variable name like "printf"?
-                        terminated(tag_no_case("print"), multispace1), // Terminated by a space
+                        // Cannot cut the multispace1 because we want to fall to the empty print statement case. Could refactor to avoid this?
+                        terminated(tag_no_case("print"), context("Space needed after print statement", multispace1)), // Terminated by a space
                         cut(map(
                             separated_list1(with_whitespaces(char(',')), Expr::parse),
                             Instr::Print,
                         )),
                     ),
+                ),
+                context(
+                    "print statement (empty)",
+                    map(tag_no_case("print"), |_| Instr::Print(vec![])),
                 ),
                 context(
                     "let statement",
@@ -128,10 +134,16 @@ impl Instr<'_> {
                     map(
                         preceded(
                             terminated(tag_no_case("input"), multispace1),
-                            separated_pair(Expr::parse, with_whitespaces(char(',')), Expr::parse),
+                            cut(separated_pair(Expr::parse, with_whitespaces(char(',')), Expr::parse)),
                         ),
                         |(expr1, expr2)| Instr::Input(expr1, expr2),
                     ),
+                ),
+                context(
+                    "goto statement",
+                    map(preceded(tag_no_case("go to "), digit1), |x: &str| {
+                        Instr::Goto(x.parse().expect("Line no. too large, this is insanity")) // TODO: Handle error
+                    }),
                 ),
             )),
             multispace0,
