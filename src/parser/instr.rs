@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, tag_no_case};
 use nom::character::complete::{alpha1, digit1, multispace0, multispace1, one_of};
-use nom::combinator::map;
+use nom::combinator::{all_consuming, map};
 use nom::error::{context, VerboseError};
 use nom::multi::{many0, separated_list1};
 use nom::sequence::{pair, preceded, separated_pair, terminated};
@@ -45,7 +45,7 @@ impl Expr<'_> {
         s: &'a str,
     ) -> ParseResult<'a, Expr<'a>> {
         let (s, expr) = f(s)?;
-        let (s, exprs) = many0(pair(one_of(chars), f))(s)?;
+        let (s, exprs) = many0(pair(with_whitespaces(one_of(chars)), f))(s)?;
         Ok((
             s,
             exprs
@@ -74,17 +74,23 @@ impl Expr<'_> {
     }
 }
 
+fn with_whitespaces<'a, F, O>(f: F) -> impl FnMut(&'a str) -> ParseResult<'a, O>
+where
+    F: FnMut(&'a str) -> ParseResult<'a, O>,
+{
+    preceded(multispace0, terminated(f, multispace0))
+}
+
 impl Instr<'_> {
     pub fn parse(s: &str) -> ParseResult<Instr> {
-        // TODO: Make this fail if there is any remaining input
-        terminated(
+        all_consuming(terminated(
             alt((
                 context(
                     "print statement",
                     preceded(
                         terminated(tag_no_case("print"), multispace1), // Terminated by a space
                         map(
-                            separated_list1(terminated(tag(","), multispace0), Expr::parse),
+                            separated_list1(with_whitespaces(tag(",")), Expr::parse),
                             Instr::Print,
                         ),
                     ),
@@ -95,8 +101,8 @@ impl Instr<'_> {
                         terminated(tag_no_case("let"), multispace1),
                         map(
                             separated_pair(
-                                terminated(Expr::parse_ident, multispace0),
-                                terminated(tag("="), multispace0),
+                                Expr::parse_ident,
+                                with_whitespaces(tag("=")),
                                 Expr::parse,
                             ),
                             |(ident, expr)| Instr::Assign(ident, expr),
@@ -110,8 +116,8 @@ impl Instr<'_> {
                         preceded(
                             terminated(tag_no_case("input"), multispace1),
                             separated_pair(
-                                terminated(Expr::parse, multispace0),
-                                terminated(tag(","), multispace0),
+                                Expr::parse,
+                                with_whitespaces(tag(",")),
                                 Expr::parse,
                             ),
                         ),
@@ -120,7 +126,7 @@ impl Instr<'_> {
                 ),
             )),
             multispace0,
-        )(s)
+        ))(s)
     }
 }
 
