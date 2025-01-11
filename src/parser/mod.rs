@@ -1,9 +1,12 @@
 mod instr;
 mod parser_tests;
 mod integration_tests;
-use instr::NomErr;
+mod parse_tools;
+mod expr;
+use parse_tools::NomErr;
 
-pub use self::instr::{Instr, Expr};
+pub use self::instr::Instr;
+pub use self::expr::Expr;
 
 pub fn parse_file(file: &str, prefixed: bool) -> Result<Vec<Instr>, nom::Err<NomErr>> {
     let mut instrs = Vec::new();

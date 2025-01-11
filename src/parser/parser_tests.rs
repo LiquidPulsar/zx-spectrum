@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::parser::{instr::NomErr, Expr, Instr};
+    use crate::parser::{parse_tools::NomErr, Expr, Instr};
 
     fn success <'a, T> (instr: T) -> Result<(&'a str, T), nom::Err<NomErr<'a>>> {
         Ok(("", instr))
