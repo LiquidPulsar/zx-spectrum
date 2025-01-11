@@ -13,7 +13,7 @@ mod tests {
             let path = entry.path();
             if path.is_file() {
                 let content = fs::read_to_string(&path).expect("Failed to read file");
-                let parsed = parse_file(&content);
+                let parsed = parse_file(&content, false);
                 assert!(parsed.is_ok(), "Failed to parse file: {:?}\n {:#?}", path, parsed);
             }
         }
