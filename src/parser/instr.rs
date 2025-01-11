@@ -27,7 +27,8 @@ pub enum Expr<'a> {
     Div(Box<Expr<'a>>, Box<Expr<'a>>),
 }
 
-type ParseResult<'a, T> = IResult<&'a str, T, VerboseError<&'a str>>;
+pub type NomErr<'a> = VerboseError<&'a str>;
+pub type ParseResult<'a, T> = IResult<&'a str, T, NomErr<'a>>;
 
 impl Expr<'_> {
     fn parse_ident(s: &str) -> ParseResult<Expr> {
@@ -89,8 +90,8 @@ where
 }
 
 impl Instr<'_> {
-    pub fn parse(s: &str) -> ParseResult<Instr> {
-        all_consuming(terminated(
+    pub fn parse(s: &str) -> ParseResult<Vec<Instr>> {
+        all_consuming(separated_list1(with_whitespaces(char(':')), terminated(
             alt((
                 context(
                     "print statement",
@@ -147,6 +148,6 @@ impl Instr<'_> {
                 ),
             )),
             multispace0,
-        ))(s)
+        )))(s)
     }
 }

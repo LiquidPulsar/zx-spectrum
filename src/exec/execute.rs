@@ -39,11 +39,15 @@ impl<'a> Instr<'a> {
                 println!("{}", expr1.eval(state)?);
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input)?;
-                let input = input.trim().parse::<i64>()?;
+                // TODO: Impl "CONTINUE"
+                if input.trim_end() == "STOP" {
+                    return Err(anyhow!("Program stopped by user"));
+                }
+                let input = input.trim_end().parse::<i64>()?;
                 state.vars.insert(ident, input);
             }
             Instr::Input(_, expr) => return Err(anyhow!("(In input instr) Expected identifier, found: {:?}", expr)),
-            Instr::Goto(pc) => state.pc = (*pc / 10) - 1, // Convert from line number to 0-based index
+            Instr::Goto(pc) => state.pc = (*pc / 10) - 1, // Convert from line number to 0-based index. Non-10s digits are ignored.
         }
         Ok(())
     }

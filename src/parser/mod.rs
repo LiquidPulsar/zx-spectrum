@@ -8,8 +8,8 @@ pub use self::instr::{Instr, Expr};
 pub fn parse_file(file: &str) -> Result<Vec<Instr>, nom::Err<VerboseError<&str>>> {
     let mut instrs = Vec::new();
     for line in file.lines() {
-        let (_, instr) = Instr::parse(line)?;
-        instrs.push(instr);
+        let (_, new_instrs) = Instr::parse(line)?;
+        instrs.extend(new_instrs);
     }
     Ok(instrs)
 }

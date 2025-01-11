@@ -1,6 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use crate::parser::{Expr, Instr};
+    use crate::parser::{instr::NomErr, Expr, Instr};
+
+    fn success(instr: Instr) -> Result<(&str, Vec<Instr>), nom::Err<NomErr>> {
+        Ok(("", vec![instr]))
+    }
 
     #[test]
     fn test_parse_expr() {
@@ -12,11 +16,11 @@ mod tests {
     fn test_parse_instr() {
         assert_eq!(
             Instr::parse("print 42"),
-            Ok(("", Instr::Print(vec![Expr::Int(42)]),)),
+            success(Instr::Print(vec![Expr::Int(42)]),),
         );
         assert_eq!(
             Instr::parse("let x = 42"),
-            Ok(("", Instr::Assign(Expr::Ident("x"), Expr::Int(42)),)),
+            success(Instr::Assign(Expr::Ident("x"), Expr::Int(42)),),
         );
         // Test malformed
         assert!(Instr::parse("let x =").is_err());
@@ -87,14 +91,31 @@ mod tests {
 
         assert_eq!(
             Instr::parse("PRINT 1, \"world!\""),
-            Ok(("", Instr::Print(vec![Expr::Int(1), Expr::String("world!")]))),
+            Ok((
+                "",
+                vec![Instr::Print(vec![Expr::Int(1), Expr::String("world!")])]
+            )),
         );
 
         assert_eq!(
             Instr::parse("PRINT \"Hello,\", \"world!\""),
             Ok((
                 "",
-                Instr::Print(vec![Expr::String("Hello,"), Expr::String("world!")])
+                vec![Instr::Print(vec![
+                    Expr::String("Hello,"),
+                    Expr::String("world!")
+                ])]
+            )),
+        );
+    }
+
+    #[test]
+    fn test_multi_instr() {
+        assert_eq!(
+            Instr::parse("PRINT 1:PRINT 2"),
+            Ok((
+                "",
+                vec![Instr::Print(vec![Expr::Int(1)]), Instr::Print(vec![Expr::Int(2)]),]
             )),
         );
     }
