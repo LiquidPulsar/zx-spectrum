@@ -1,4 +1,6 @@
 mod instr;
+mod parser_tests;
+mod integration_tests;
 use nom::error::VerboseError;
 
 pub use self::instr::{Instr, Expr};
