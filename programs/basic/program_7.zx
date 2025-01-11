@@ -1,0 +1,6 @@
+REM temperature conversion
+PRINT "deg F", "deg C"
+REM PRINT
+REM INPUT "Enter deg F", F
+REM PRINT F,(F-32)*5/9
+REM GO TO 40

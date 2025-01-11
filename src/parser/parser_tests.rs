@@ -45,4 +45,39 @@ mod tests {
             )),
         );
     }
+
+    #[test]
+    fn test_string() {
+        assert_eq!(
+            Expr::parse("\"hello\""),
+            Ok(("", Expr::String("hello"),)),
+        );
+
+        assert_eq!(
+            Expr::parse("\"hello\" + \"world\""),
+            Ok((
+                "",
+                Expr::Add(
+                    Box::new(Expr::String("hello")),
+                    Box::new(Expr::String("world"))
+                )
+            )),
+        );
+
+        assert_eq!(
+            Instr::parse("PRINT 1, \"world!\""),
+            Ok((
+                "",
+                Instr::Print(vec![Expr::Int(1), Expr::String("world!")])
+            )),
+        );
+
+        assert_eq!(
+            Instr::parse("PRINT \"Hello,\", \"world!\""),
+            Ok((
+                "",
+                Instr::Print(vec![Expr::String("Hello,"), Expr::String("world!")])
+            )),
+        );
+    }
 }

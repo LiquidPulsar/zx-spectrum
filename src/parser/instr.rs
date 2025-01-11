@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::bytes::complete::tag_no_case;
+use nom::bytes::complete::{tag_no_case, take_till};
 use nom::character::complete::{alpha1, char, digit1, multispace0, multispace1, one_of};
 use nom::combinator::{all_consuming, cut, map, opt, rest};
 use nom::error::{context, VerboseError};
@@ -37,7 +37,10 @@ impl Expr<'_> {
         alt((
             Expr::parse_ident,
             map(digit1, |s: &str| Expr::Int(s.parse().unwrap())),
-            preceded(char('"'), terminated(map(alpha1, Expr::String), char('"'))),
+            preceded(
+                char('"'),
+                terminated(map(take_till(|x| x == '\"'), Expr::String), char('"')),
+            ),
         ))(s)
     }
 
@@ -110,20 +113,22 @@ impl Instr<'_> {
                                 Expr::parse,
                             ),
                             |(ident, expr)| Instr::Assign(ident, expr),
-                        ),
-                    )),
+                        )),
+                    ),
                 ),
-                context("rem statement", map(preceded(terminated(tag_no_case("rem") ,opt(char(' '))), rest), Instr::Rem)),
+                context(
+                    "rem statement",
+                    map(
+                        preceded(terminated(tag_no_case("rem"), opt(char(' '))), rest),
+                        Instr::Rem,
+                    ),
+                ),
                 context(
                     "input statement",
                     map(
                         preceded(
                             terminated(tag_no_case("input"), multispace1),
-                            separated_pair(
-                                Expr::parse,
-                                with_whitespaces(char(',')),
-                                Expr::parse,
-                            ),
+                            separated_pair(Expr::parse, with_whitespaces(char(',')), Expr::parse),
                         ),
                         |(expr1, expr2)| Instr::Input(expr1, expr2),
                     ),
