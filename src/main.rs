@@ -1,29 +1,20 @@
-use std::process::exit;
-
+use std::fs::read_to_string;
+use anyhow::{anyhow, Error};
 use clap::Parser;
 mod cli;
-mod parser;
 mod exec;
+mod parser;
 
-fn main() {
+fn main() -> Result<(), Error> {
     let args = cli::Args::parse();
-    let content = std::fs::read_to_string(args.path).expect("failed to read file");
-    let res = parser::parse_file(&content, args.prefixed);
-
-    let instrs = match res {
-        Err(err) => {
-            eprintln!("Error: {:#?}", err);
-            exit(1);
-        }
-        Ok(instrs) => instrs
+    let content = read_to_string(args.path).map_err(|e| anyhow!("Failed to read file: {}", e))?;
+    // If using map_err and ?, this won't compile: lifetime mismatch from desugared ? operator, so we'll go manual:
+    let instrs = match parser::parse_file(&content, args.prefixed) {
+        Ok(instrs) => instrs,
+        Err(e) => return Err(anyhow!("Failed to parse file: {:#?}", e)),
     };
 
-    for instr in &instrs {
-        println!("{:?}", instr);
-    }
+    exec::execute(instrs).map_err(|e| anyhow!("Failed to execute program: {:#?}", e))?;
 
-    if let Err(err) = exec::execute(instrs) {
-        eprintln!("Error: failed to execute: {:#?}", err);
-        exit(1);
-    }
+    Ok(())
 }
