@@ -19,26 +19,26 @@ impl Display for Value<'_> {
     }
 }
 
+macro_rules! impl_from {
+    ($($t:ty => $constructor:expr),*) => {
+        $(
+            impl From<$t> for Value<'_> {
+                fn from(s: $t) -> Self {
+                    $constructor(s)
+                }
+            }
+        )*
+    };
+}
+
 impl <'a> From<&'a str> for Value<'a> {
     fn from(s: &'a str) -> Self {
         Value::String(s)
     }
 }
 
-impl From<i64> for Value<'_> {
-    fn from(s: i64) -> Self {
-        Value::Int(s)
-    }
-}
-
-impl From<bool> for Value<'_> {
-    fn from(s: bool) -> Self {
-        Value::Bool(s)
-    }
-}
-
-impl From<char> for Value<'_> {
-    fn from(s: char) -> Self {
-        Value::Char(s)
-    }
+impl_from! {
+    i64 => Value::Int,
+    bool => Value::Bool,
+    char => Value::Char
 }
