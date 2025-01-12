@@ -109,4 +109,32 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_operators() {
+        assert_eq!(
+            Expr::parse("1 > 2"),
+            success(Expr::Gt(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+        assert_eq!(
+            Expr::parse("1 < 2"),
+            success(Expr::Lt(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+        assert_eq!(
+            Expr::parse("1 = 2"),
+            success(Expr::Eq(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+        assert_eq!(
+            Expr::parse("1 >= 2"),
+            success(Expr::Ge(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+        assert_eq!(
+            Expr::parse("1 <= 2"),
+            success(Expr::Le(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+        assert_eq!(
+            Expr::parse("1 <> 2"),
+            success(Expr::Ne(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
+        );
+    }
 }

@@ -101,6 +101,15 @@ impl Expr<'_> {
             Expr::Eq(expr1, expr2) => {
                 Ok((expr1.eval_to_int(state)? == expr2.eval_to_int(state)?).into())
             }
+            Expr::Ne(expr1, expr2) => {
+                Ok((expr1.eval_to_int(state)? != expr2.eval_to_int(state)?).into())
+            }
+            Expr::Ge(expr1, expr2) => {
+                Ok((expr1.eval_to_int(state)? >= expr2.eval_to_int(state)?).into())
+            }
+            Expr::Le(expr1, expr2) => {
+                Ok((expr1.eval_to_int(state)? <= expr2.eval_to_int(state)?).into())
+            }
         }
     }
 
@@ -113,7 +122,7 @@ impl Expr<'_> {
             Expr::Mul(expr1, expr2) => Ok(expr1.eval_to_int(state)? * expr2.eval_to_int(state)?),
             Expr::Div(expr1, expr2) => Ok(expr1.eval_to_int(state)? / expr2.eval_to_int(state)?),
             Expr::String(s) => Err(anyhow!("Expected integer, found string: {}", s)),
-            Expr::Gt(_, _) | Expr::Lt(_, _) | Expr::Eq(_, _) => {
+            Expr::Gt(_, _) | Expr::Lt(_, _) | Expr::Eq(_, _) | Expr::Ne(_, _) | Expr::Le(_, _) |  Expr::Ge(_, _) => {
                 Err(anyhow!("Expected integer, found comparison: {:?}", self))
             }
         }
