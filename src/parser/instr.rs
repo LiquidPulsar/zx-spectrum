@@ -21,15 +21,15 @@ pub enum Instr<'a> {
     Multi(Vec<Instr<'a>>),
 }
 
-impl<'a> Instr<'a> {
-    pub fn parse_prefixed(s: &'a str) -> ParseResult<'a, Instr> {
+impl Instr<'_> {
+    pub fn parse_prefixed(s: &str) -> ParseResult<Instr> {
         preceded(
             context("Prefixed line", pair(digit1, multispace1)),
             Instr::parse,
         )(s)
     }
 
-    pub fn parse(s: &'a str) -> ParseResult<'a, Instr> {
+    pub fn parse(s: &str) -> ParseResult<Instr> {
         let (s, res) = all_consuming(separated_list1(
             with_whitespaces(char(':')),
             terminated(

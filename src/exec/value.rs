@@ -25,19 +25,19 @@ impl <'a> From<&'a str> for Value<'a> {
     }
 }
 
-impl <'a> From<i64> for Value<'a> {
+impl From<i64> for Value<'_> {
     fn from(s: i64) -> Self {
         Value::Int(s)
     }
 }
 
-impl <'a> From<bool> for Value<'a> {
+impl From<bool> for Value<'_> {
     fn from(s: bool) -> Self {
         Value::Bool(s)
     }
 }
 
-impl <'a> From<char> for Value<'a> {
+impl From<char> for Value<'_> {
     fn from(s: char) -> Self {
         Value::Char(s)
     }

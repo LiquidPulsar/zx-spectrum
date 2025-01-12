@@ -7,8 +7,11 @@ pub struct State<'a> {
     pub pc: usize,
 }
 
-impl <'a> State<'a> {
+impl State<'_> {
     pub fn get_var(&self, ident: &str) -> Result<i64> {
-        self.vars.get(ident).ok_or(anyhow!("NameError: {}", ident)).copied()
+        self.vars
+            .get(ident)
+            .ok_or(anyhow!("NameError: {}", ident))
+            .copied()
     }
 }
