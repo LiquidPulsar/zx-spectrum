@@ -48,10 +48,8 @@ macro_rules! parse_general {
 // I.E. is there a case where we want to backtrack after modifying the string?
 fn unsafe_lowercase_inplace(s: &str) -> &str {
     unsafe {
-        let raw_ptr: *const u8 = s.as_ptr();
-        let mutable_raw_ptr: *mut u8 = raw_ptr as *mut u8;
-        let len = s.len();
-        for i in 0..len {
+        let mutable_raw_ptr= s.as_ptr() as *mut u8;
+        for i in 0..s.len() {
             *mutable_raw_ptr.add(i) = (*mutable_raw_ptr.add(i)).to_ascii_lowercase();
         }
     }
@@ -60,7 +58,7 @@ fn unsafe_lowercase_inplace(s: &str) -> &str {
 
 impl Expr<'_> {
     pub(crate) fn parse_ident(s: &str) -> ParseResult<Expr> {
-        map(alpha1, |s: &str| Expr::Ident(unsafe_lowercase_inplace(s)))(s)
+        map(alpha1, |i| Expr::Ident(unsafe_lowercase_inplace(i)))(s)
     }
     
     fn parse_atom(s: &str) -> ParseResult<Expr> {
