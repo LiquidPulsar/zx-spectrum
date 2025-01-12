@@ -1,0 +1,8 @@
+10 LET total=0
+20 LET count=1
+30 INPUT a
+40 REM count=number of times that a has been input so far
+50 LET total=total+a
+60 LET count=count+1
+70 IF count<=5 THEN GO TO 30
+80 PRINT TOTAL
