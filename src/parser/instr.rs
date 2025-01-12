@@ -29,97 +29,103 @@ impl Instr<'_> {
         )(s)
     }
 
+    fn parse_print(s: &str) -> ParseResult<Instr> {
+        alt((
+            preceded(
+                // Cut to avoid needless backtracking after committing
+                // Cannot cut the multispace1 because we want to fall to the empty print statement case. Could refactor to avoid this?
+                terminated(
+                    tag_no_case("print"),
+                    context("Space needed after print statement", multispace1),
+                ), // Terminated by a space
+                // TODO: Add the ; to the list of separators, and make it stick the elements together
+                // TODO: Add functionality for trailing separators to stop the newline from being printed
+                cut(map(
+                    separated_list1(with_whitespaces(char(',')), Expr::parse),
+                    Instr::Print,
+                )),
+            ),
+            map(tag_no_case("print"), |_| Instr::Print(vec![])),
+        ))(s)
+    }
+
+    fn parse_if_then(s: &str) -> ParseResult<Instr> {
+        map(
+            preceded(
+                terminated(tag_no_case("if"), multispace1),
+                cut(pair(
+                    Expr::parse,
+                    preceded(with_whitespaces(tag_no_case("then")), Instr::parse),
+                )),
+            ),
+            |(expr, instrs)| Instr::IfThen(expr, Box::new(instrs)),
+        )(s)
+    }
+
+    fn parse_input(s: &str) -> ParseResult<Instr> {
+        map(
+            preceded(
+                terminated(tag_no_case("input"), multispace1),
+                cut(pair(
+                    Expr::parse,
+                    opt(preceded(with_whitespaces(char(',')), Expr::parse)),
+                )),
+            ),
+            |(expr1, expr2)| match expr2 {
+                None => Instr::Input(None, expr1),
+                Some(val) => Instr::Input(Some(expr1), val),
+            }
+        )(s)
+    }
+
+    fn parse_assign(s: &str) -> ParseResult<Instr> {
+        preceded(
+            terminated(tag_no_case("let"), multispace1),
+            cut(map(
+                separated_pair(Expr::parse_ident, with_whitespaces(char('=')), Expr::parse),
+                |(ident, expr)| Instr::Assign(ident, expr),
+            )),
+        )(s)
+    }
+
+    pub fn parse_inner(s: &str) -> ParseResult<Instr> {
+        alt((
+            context("print statement", Instr::parse_print),
+            context(
+                "let statement",
+                Instr::parse_assign,
+            ),
+            context(
+                "rem statement",
+                map(
+                    preceded(terminated(tag_no_case("rem"), opt(char(' '))), rest),
+                    Instr::Rem,
+                ),
+            ),
+            context(
+                "input statement",
+                Instr::parse_input,
+            ),
+            context(
+                "goto statement",
+                map(preceded(tag_no_case("go to "), digit1), |x: &str| {
+                    Instr::Goto(x.parse().expect("Line no. too large, this is insanity"))
+                    // TODO: Handle error
+                }),
+            ),
+            context("cls statement", map(tag_no_case("cls"), |_| Instr::Clear)),
+            context("if then statement", Instr::parse_if_then),
+            context(
+                "stop statement",
+                map(tag_no_case("stop"), |_| Instr::Goto(99999999999)),
+            ),
+        ))(s)
+    }
+
     pub fn parse(s: &str) -> ParseResult<Instr> {
         let (s, res) = all_consuming(separated_list1(
             with_whitespaces(char(':')),
-            terminated(
-                alt((
-                    context(
-                        "print statement",
-                        preceded(
-                            // Cut to avoid needless backtracking after committing
-                            // Cannot cut the multispace1 because we want to fall to the empty print statement case. Could refactor to avoid this?
-                            terminated(
-                                tag_no_case("print"),
-                                context("Space needed after print statement", multispace1),
-                            ), // Terminated by a space
-                            // TODO: Add the ; to the list of separators, and make it stick the elements together
-                            // TODO: Add functionality for trailing separators to stop the newline from being printed
-                            cut(map(
-                                separated_list1(with_whitespaces(char(',')), Expr::parse),
-                                Instr::Print,
-                            )),
-                        ),
-                    ),
-                    context(
-                        "print statement (empty)",
-                        map(tag_no_case("print"), |_| Instr::Print(vec![])),
-                    ),
-                    context(
-                        "let statement",
-                        preceded(
-                            terminated(tag_no_case("let"), multispace1),
-                            cut(map(
-                                separated_pair(
-                                    Expr::parse_ident,
-                                    with_whitespaces(char('=')),
-                                    Expr::parse,
-                                ),
-                                |(ident, expr)| Instr::Assign(ident, expr),
-                            )),
-                        ),
-                    ),
-                    context(
-                        "rem statement",
-                        map(
-                            preceded(terminated(tag_no_case("rem"), opt(char(' '))), rest),
-                            Instr::Rem,
-                        ),
-                    ),
-                    context(
-                        "input statement",
-                        map(
-                            preceded(
-                                terminated(tag_no_case("input"), multispace1),
-                                cut(pair(
-                                    Expr::parse,
-                                    opt(preceded(with_whitespaces(char(',')), Expr::parse)),
-                                )),
-                            ),
-                            |(expr1, expr2)| match expr2 {
-                                None => Instr::Input(None, expr1),
-                                Some(val) => Instr::Input(Some(expr1), val),
-                            },
-                        ),
-                    ),
-                    context(
-                        "goto statement",
-                        map(preceded(tag_no_case("go to "), digit1), |x: &str| {
-                            Instr::Goto(x.parse().expect("Line no. too large, this is insanity"))
-                            // TODO: Handle error
-                        }),
-                    ),
-                    context("cls statement", map(tag_no_case("cls"), |_| Instr::Clear)),
-                    context(
-                        "if then statement",
-                        map(
-                            preceded(
-                                terminated(tag_no_case("if"), multispace1),
-                                cut(pair(
-                                    Expr::parse,
-                                    preceded(with_whitespaces(tag_no_case("then")), Instr::parse),
-                                )),
-                            ),
-                            |(expr, instrs)| Instr::IfThen(expr, Box::new(instrs)),
-                        ),
-                    ),
-                    context(
-                        "stop statement",
-                        map(tag_no_case("stop"), |_| Instr::Goto(99999999999)),
-                    ),
-                )),
-                multispace0,
-            ),
+            terminated(Instr::parse_inner, multispace0),
         ))(s)?;
 
         Ok((

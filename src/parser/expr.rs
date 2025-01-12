@@ -8,12 +8,15 @@ use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated};
 
 use crate::parser::parse_tools::{ParseResult, with_whitespaces};
+use crate::parser::lower::LowerCase;
+
+use super::parse_tools::ident;
 
 type BExpr<'a> = Box<Expr<'a>>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr<'a> {
-    Ident(&'a str),
+    Ident(LowerCase<'a>),
     Int(i64),
     String(&'a str),
     Add(BExpr<'a>, BExpr<'a>),
@@ -43,22 +46,9 @@ macro_rules! parse_general {
     }
 }
 
-// This function is unsafe because it modifies the input string in place
-// TODO: is there ever a case where we actually want to unwind this in the parser?
-// I.E. is there a case where we want to backtrack after modifying the string?
-fn unsafe_lowercase_inplace(s: &str) -> &str {
-    unsafe {
-        let mutable_raw_ptr= s.as_ptr() as *mut u8;
-        for i in 0..s.len() {
-            *mutable_raw_ptr.add(i) = (*mutable_raw_ptr.add(i)).to_ascii_lowercase();
-        }
-    }
-    s
-}
-
 impl Expr<'_> {
     pub(crate) fn parse_ident(s: &str) -> ParseResult<Expr> {
-        map(alpha1, |i| Expr::Ident(unsafe_lowercase_inplace(i)))(s)
+        map(alpha1, ident)(s)
     }
     
     fn parse_atom(s: &str) -> ParseResult<Expr> {

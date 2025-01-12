@@ -33,7 +33,7 @@ impl<'a> Instr<'a> {
                 );
             }
             Instr::Assign(Expr::Ident(ident), expr) => {
-                state.vars.insert(ident, expr.eval_to_int(state)?);
+                state.vars.insert(ident.clone(), expr.eval_to_int(state)?);
             }
             Instr::Assign(expr, _) => {
                 return Err(anyhow!(
@@ -53,7 +53,7 @@ impl<'a> Instr<'a> {
                     return Err(anyhow!("Program stopped by user"));
                 }
                 let input = input.trim_end().parse::<i64>()?;
-                state.vars.insert(ident, input);
+                state.vars.insert(ident.clone(), input);
             }
             Instr::Input(_, expr) => {
                 return Err(anyhow!(

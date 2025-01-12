@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::parser::{parse_tools::NomErr, Expr, Instr};
+    use crate::parser::{parse_tools::{ident, NomErr}, Expr, Instr};
 
     fn success <'a, T> (instr: T) -> Result<(&'a str, T), nom::Err<NomErr<'a>>> {
         Ok(("", instr))
@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_parse_expr() {
         assert_eq!(Expr::parse("42"), Ok(("", Expr::Int(42))));
-        assert_eq!(Expr::parse("x"), Ok(("", Expr::Ident("x"))));
+        assert_eq!(Expr::parse("x"), Ok(("", ident("x"))));
     }
 
     #[test]
@@ -20,7 +20,7 @@ mod tests {
         );
         assert_eq!(
             Instr::parse("let x = 42"),
-            success(Instr::Assign(Expr::Ident("x"), Expr::Int(42)))
+            success(Instr::Assign(ident("x"), Expr::Int(42)))
         );
         // Test malformed
         assert!(Instr::parse("let x =").is_err());

@@ -5,6 +5,8 @@ use nom::{
     IResult,
 };
 
+use super::{Expr, LowerCase};
+
 pub type NomErr<'a> = VerboseError<&'a str>;
 pub type ParseResult<'a, T> = IResult<&'a str, T, NomErr<'a>>;
 
@@ -13,4 +15,8 @@ where
     F: FnMut(&'a str) -> ParseResult<'a, O>,
 {
     preceded(multispace0, terminated(f, multispace0))
+}
+
+pub fn ident<'a>(s: &'a str) -> Expr<'a> {
+    Expr::Ident(LowerCase(s))
 }

@@ -1,0 +1,7 @@
+10 LET total=0
+20 FOR c=1 TO5
+30 INPUT a
+40 REM c=number of times that a has been input so far
+50 LET total=total+a
+60 NEXT c
+80 PRINT total
