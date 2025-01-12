@@ -1,4 +1,3 @@
-use anyhow::Error;
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
 use nom::character::complete::{char, digit1, multispace0, multispace1};

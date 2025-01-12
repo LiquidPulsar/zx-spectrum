@@ -16,6 +16,5 @@ pub fn parse_file(file: &str, prefixed: bool) -> Result<Vec<Instr>, nom::Err<Nom
     };
     file.lines()
         .map(|line| parse_fn(line).map(|(_, res)| res))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.into())
+        .collect()
 }
