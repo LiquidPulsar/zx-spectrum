@@ -34,6 +34,8 @@ pub enum Expr<'a> {
 macro_rules! parse_general {
     ($func:expr, $s:expr, $($parser:expr),*) => {
         {
+            // Other option, but uses a clone which I don't like
+            // fold_many0(pair(with_whitespaces(alt(($(tag($parser)),*))), $func), move || expr.clone(), |acc, (op, expr)| Expr::parse_fn(op, acc, expr))(s)
             let (s, expr) = $func($s)?;
             let (s, exprs) = many0(pair(with_whitespaces(alt(($(tag($parser)),*))), $func))(s)?;
             Ok((

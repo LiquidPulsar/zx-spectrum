@@ -1,7 +1,7 @@
 use nom::{
     character::complete::multispace0,
     error::VerboseError,
-    sequence::{preceded, terminated},
+    sequence::delimited,
     IResult,
 };
 
@@ -14,7 +14,7 @@ pub(crate) fn with_whitespaces<'a, F, O>(f: F) -> impl FnMut(&'a str) -> ParseRe
 where
     F: FnMut(&'a str) -> ParseResult<'a, O>,
 {
-    preceded(multispace0, terminated(f, multispace0))
+    delimited(multispace0, f, multispace0)
 }
 
 pub fn ident(s: &str) -> Expr {
