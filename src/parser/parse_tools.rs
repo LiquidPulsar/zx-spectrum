@@ -17,6 +17,6 @@ where
     preceded(multispace0, terminated(f, multispace0))
 }
 
-pub fn ident<'a>(s: &'a str) -> Expr<'a> {
+pub fn ident(s: &str) -> Expr {
     Expr::Ident(LowerCase(s))
 }

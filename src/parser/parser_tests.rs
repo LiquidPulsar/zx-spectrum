@@ -137,4 +137,42 @@ mod tests {
             success(Expr::Ne(Box::new(Expr::Int(1)), Box::new(Expr::Int(2))))
         );
     }
+
+    #[test]
+    fn test_if_then() {
+        assert_eq!(
+            Instr::parse("IF 1 THEN PRINT 2"),
+            success(Instr::IfThen(Expr::Int(1), Box::new(Instr::Print(vec![Expr::Int(2)])))
+        ));
+    }
+
+    #[test]
+    fn test_input() {
+        assert_eq!(
+            Instr::parse("INPUT x"),
+            success(Instr::Input(None, ident("x"))
+        ));
+        assert_eq!(
+            Instr::parse("INPUT x, 42"),
+            success(Instr::Input(Some(ident("x")), Expr::Int(42))
+        ));
+    }
+
+    #[test]
+    fn test_for() {
+        assert_eq!(
+            Instr::parse("FOR i = 1 TO 10"),
+            success(Instr::For(ident("i"), Expr::Int(1), Expr::Int(10), Expr::Int(1))
+        ));
+
+        assert_eq!(
+            Instr::parse("FOR i = 1 TO 10 STEP 2"),
+            success(Instr::For(ident("i"), Expr::Int(1), Expr::Int(10), Expr::Int(2))
+        ));
+
+        assert_eq!(
+            Instr::parse("FOR i = 10 TO 1 STEP -2"),
+            success(Instr::For(ident("i"), Expr::Int(10), Expr::Int(1), Expr::Int(-2))
+        ));
+    }
 }

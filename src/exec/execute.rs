@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
 
-use super::{State, Value};
+use super::{state::LoopState, State, Value};
 use crate::parser::{Expr, Instr};
 
 pub fn execute(instrs: Vec<Instr>) -> Result<(), anyhow::Error> {
@@ -14,7 +14,8 @@ pub fn execute(instrs: Vec<Instr>) -> Result<(), anyhow::Error> {
 }
 
 impl<'a> Instr<'a> {
-    fn execute<'b>(&self, state: &mut State<'b>) -> Result<bool> // Did we jump?
+    fn execute<'b>(&self, state: &mut State<'b>) -> Result<bool>
+    // Did we jump?
     where
         'a: 'b,
     {
@@ -78,6 +79,50 @@ impl<'a> Instr<'a> {
                     }
                 }
             }
+            Instr::For(Expr::Ident(ident), start, end, step) => {
+                state.vars.insert(ident.clone(), start.eval_to_int(state)?);
+                state.loop_stack.push(LoopState {
+                    start_line: state.pc,
+                    var_name: ident.clone(),
+                    end_value: end.eval_to_int(state)?,
+                    step: step.eval_to_int(state)?,
+                });
+            }
+            Instr::For(expr, _, _, _) => {
+                return Err(anyhow!("Expected identifier, found {:?}", expr));
+            }
+            Instr::Next(Expr::Ident(ident)) => {
+                let loop_state = state
+                    .loop_stack
+                    .last_mut()
+                    .ok_or(anyhow!("Next without for"))?;
+                ensure!(
+                    loop_state.var_name == *ident,
+                    "Next without matching for: {}",
+                    ident
+                );
+                state.vars.insert(
+                    ident.clone(),
+                    state
+                        .vars
+                        .get(ident)
+                        .ok_or(anyhow!("NameError: {}", ident))?
+                        + loop_state.step,
+                );
+                if loop_state.step == 0 {
+                    return Err(anyhow!("Step cannot be zero")); // TODO: Relax this restriction
+                } else if (loop_state.step > 0
+                    && state.vars.get(ident) <= Some(&loop_state.end_value))
+                    || (loop_state.step < 0 && state.vars.get(ident) >= Some(&loop_state.end_value))
+                {
+                    state.pc = loop_state.start_line + 1;
+
+                    return Ok(true);
+                }
+            }
+            Instr::Next(expr) => {
+                return Err(anyhow!("Expected identifier, found {:?}", expr));
+            }
         }
         Ok(false)
     }
@@ -122,9 +167,12 @@ impl Expr<'_> {
             Expr::Mul(expr1, expr2) => Ok(expr1.eval_to_int(state)? * expr2.eval_to_int(state)?),
             Expr::Div(expr1, expr2) => Ok(expr1.eval_to_int(state)? / expr2.eval_to_int(state)?),
             Expr::String(s) => Err(anyhow!("Expected integer, found string: {}", s)),
-            Expr::Gt(_, _) | Expr::Lt(_, _) | Expr::Eq(_, _) | Expr::Ne(_, _) | Expr::Le(_, _) |  Expr::Ge(_, _) => {
-                Err(anyhow!("Expected integer, found comparison: {:?}", self))
-            }
+            Expr::Gt(_, _)
+            | Expr::Lt(_, _)
+            | Expr::Eq(_, _)
+            | Expr::Ne(_, _)
+            | Expr::Le(_, _)
+            | Expr::Ge(_, _) => Err(anyhow!("Expected integer, found comparison: {:?}", self)),
         }
     }
 }

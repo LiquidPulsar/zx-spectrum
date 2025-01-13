@@ -1,14 +1,14 @@
 use nom::branch::alt;
-use nom::bytes::complete::take_till;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, char, digit1};
+use nom::bytes::complete::take_till;
+use nom::character::complete::{alpha1, char, i64};
 use nom::combinator::{cut, map};
 use nom::error::context;
 use nom::multi::many0;
 use nom::sequence::{pair, preceded, terminated};
 
-use crate::parser::parse_tools::{ParseResult, with_whitespaces};
 use crate::parser::lower::LowerCase;
+use crate::parser::parse_tools::{with_whitespaces, ParseResult};
 
 use super::parse_tools::ident;
 
@@ -50,7 +50,7 @@ impl Expr<'_> {
     pub(crate) fn parse_ident(s: &str) -> ParseResult<Expr> {
         map(alpha1, ident)(s)
     }
-    
+
     fn parse_atom(s: &str) -> ParseResult<Expr> {
         alt((
             preceded(
@@ -64,7 +64,7 @@ impl Expr<'_> {
                 ),
             ), // Parentheses
             Expr::parse_ident,
-            map(digit1, |s: &str| Expr::Int(s.parse().unwrap())),
+            map(i64, Expr::Int),
             preceded(
                 char('"'),
                 terminated(map(take_till(|x| x == '\"'), Expr::String), char('"')),
@@ -81,7 +81,7 @@ impl Expr<'_> {
     }
 
     pub fn parse(s: &str) -> ParseResult<Expr> {
-        parse_general!(Expr::parse_factor, s, "<=",">=","<>","<",">","=") // Parse 2-char operators first
+        parse_general!(Expr::parse_factor, s, "<=", ">=", "<>", "<", ">", "=") // Parse 2-char operators first
     }
 
     fn parse_fn<'a>(op: &str, acc: Expr<'a>, expr: Expr<'a>) -> Expr<'a> {

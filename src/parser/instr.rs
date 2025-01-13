@@ -1,13 +1,15 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, digit1, multispace0, multispace1};
-use nom::combinator::{all_consuming, cut, map, opt, rest};
+use nom::character::complete::{alpha1, char, digit1, multispace0, multispace1};
+use nom::combinator::{all_consuming, cut, map, opt, rest, verify};
 use nom::error::context;
 use nom::multi::separated_list1;
 use nom::sequence::{pair, preceded, separated_pair, terminated};
 
 use crate::parser::expr::Expr;
 use crate::parser::parse_tools::{with_whitespaces, ParseResult};
+
+use super::parse_tools::ident;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Instr<'a> {
@@ -19,6 +21,8 @@ pub enum Instr<'a> {
     Clear,
     IfThen(Expr<'a>, Box<Instr<'a>>),
     Multi(Vec<Instr<'a>>),
+    For(Expr<'a>, Expr<'a>, Expr<'a>, Expr<'a>), // For(ident, start, end, step)
+    Next(Expr<'a>),
 }
 
 impl Instr<'_> {
@@ -74,27 +78,64 @@ impl Instr<'_> {
             |(expr1, expr2)| match expr2 {
                 None => Instr::Input(None, expr1),
                 Some(val) => Instr::Input(Some(expr1), val),
-            }
+            },
         )(s)
+    }
+
+    fn parse_inner_assign(s: &str) -> ParseResult<(Expr, Expr)> {
+        separated_pair(Expr::parse_ident, with_whitespaces(char('=')), Expr::parse)(s)
     }
 
     fn parse_assign(s: &str) -> ParseResult<Instr> {
         preceded(
             terminated(tag_no_case("let"), multispace1),
-            cut(map(
-                separated_pair(Expr::parse_ident, with_whitespaces(char('=')), Expr::parse),
-                |(ident, expr)| Instr::Assign(ident, expr),
-            )),
+            cut(map(Instr::parse_inner_assign, |(ident, expr)| {
+                Instr::Assign(ident, expr)
+            })),
+        )(s)
+    }
+
+    fn parse_name_as_ident(s: &str) -> ParseResult<Expr> {
+        map(verify(alpha1, |x: &str| x.len() == 1), ident)(s)
+    }
+
+    // TODO: For loop can appear as part of single-line command, should be able to function as such
+    fn parse_for(s: &str) -> ParseResult<Instr> {
+        map(
+            preceded(
+                terminated(tag_no_case("for"), multispace1),
+                cut(pair(
+                    separated_pair(Instr::parse_name_as_ident, with_whitespaces(char('=')), Expr::parse), // TODO: make this only accept single letter identifiers set to ints
+                    preceded(
+                        with_whitespaces(tag_no_case("to")),
+                        cut(pair(
+                            Expr::parse, // TODO: make this only accept ints
+                            opt(preceded(
+                                with_whitespaces(tag_no_case("step")),
+                                Expr::parse,
+                            )),
+                        )),
+                    ),
+                )),
+            ),
+            |((ident, start), (end, step))| Instr::For(ident, start, end, step.unwrap_or(Expr::Int(1))),
+        )(s)
+    }
+
+    fn parse_next(s: &str) -> ParseResult<Instr> {
+        map(
+            preceded(
+                terminated(tag_no_case("next"), multispace1),
+                cut(Instr::parse_name_as_ident),
+            ),
+            Instr::Next,
         )(s)
     }
 
     pub fn parse_inner(s: &str) -> ParseResult<Instr> {
         alt((
             context("print statement", Instr::parse_print),
-            context(
-                "let statement",
-                Instr::parse_assign,
-            ),
+            context("let statement", Instr::parse_assign),
             context(
                 "rem statement",
                 map(
@@ -102,10 +143,7 @@ impl Instr<'_> {
                     Instr::Rem,
                 ),
             ),
-            context(
-                "input statement",
-                Instr::parse_input,
-            ),
+            context("input statement", Instr::parse_input),
             context(
                 "goto statement",
                 map(preceded(tag_no_case("go to "), digit1), |x: &str| {
@@ -119,6 +157,8 @@ impl Instr<'_> {
                 "stop statement",
                 map(tag_no_case("stop"), |_| Instr::Goto(99999999999)),
             ),
+            context("for loop", Instr::parse_for),
+            context("next statement", Instr::parse_next),
         ))(s)
     }
 
