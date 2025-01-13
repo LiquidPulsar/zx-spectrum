@@ -42,9 +42,7 @@ impl Instr<'_> {
                 terminated(
                     tag_no_case("print"),
                     context("Space needed after print statement", multispace1),
-                ), // Terminated by a space
-                // TODO: Add the ; to the list of separators, and make it stick the elements together
-                // TODO: Add functionality for trailing separators to stop the newline from being printed
+                ),
                 // TODO: Trailing '
                 cut(map(
                     tuple((Expr::parse, many0(pair(with_whitespaces(one_of(",;")), Expr::parse)), opt(with_whitespaces(one_of(",;"))))),
