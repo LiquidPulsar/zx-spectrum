@@ -1,19 +1,20 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{alpha1, char, digit1, multispace0, multispace1};
+use nom::character::complete::{alpha1, char, digit1, multispace0, multispace1, one_of};
 use nom::combinator::{all_consuming, cut, map, opt, rest, verify};
 use nom::error::context;
-use nom::multi::separated_list1;
-use nom::sequence::{pair, preceded, separated_pair, terminated};
+use nom::multi::{many0, separated_list1};
+use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 
 use crate::parser::expr::Expr;
 use crate::parser::parse_tools::{with_whitespaces, ParseResult};
 
 use super::parse_tools::ident;
 
+// TODO: Add support for string vars, denoted with training $
 #[derive(Debug, PartialEq, Clone)]
 pub enum Instr<'a> {
-    Print(Vec<Expr<'a>>),
+    Print(Option<Expr<'a>>, Vec<(char,Expr<'a>)>, Option<char>),              // Print(first_expr, rest, last)
     Assign(Expr<'a>, Expr<'a>),        // Assign(Ident, Expr)
     Input(Option<Expr<'a>>, Expr<'a>), // Input(Expr, Ident)
     Rem(&'a str),
@@ -44,12 +45,13 @@ impl Instr<'_> {
                 ), // Terminated by a space
                 // TODO: Add the ; to the list of separators, and make it stick the elements together
                 // TODO: Add functionality for trailing separators to stop the newline from being printed
+                // TODO: Trailing '
                 cut(map(
-                    separated_list1(with_whitespaces(char(',')), Expr::parse),
-                    Instr::Print,
+                    tuple((Expr::parse, many0(pair(with_whitespaces(one_of(",;")), Expr::parse)), opt(with_whitespaces(one_of(",;"))))),
+                    |(first_expr, rest, last)| Instr::Print(Some(first_expr), rest, last)
                 )),
             ),
-            map(tag_no_case("print"), |_| Instr::Print(vec![])),
+            map(tag_no_case("print"), |_| Instr::Print(None, vec![], None)),
         ))(s)
     }
 

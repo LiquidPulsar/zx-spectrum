@@ -20,18 +20,29 @@ impl<'a> Instr<'a> {
         'a: 'b,
     {
         match self {
-            Instr::Print(exprs) => {
-                println!(
-                    "{}",
-                    exprs
-                        .iter()
-                        .map(|expr| expr.eval(state))
-                        .collect::<Result<Vec<_>>>()?
-                        .iter()
-                        .map(|v| v.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                );
+            Instr::Print(first, rest, last) => {
+                if let Some(first) = first {
+                    print!("{}", first.eval(state)?);
+                    for (sep, expr) in rest {
+                        match *sep {
+                            ',' => print!(" "),
+                            ';' => {},
+                            _ => return Err(anyhow!("Expected ',' or ';', found: {:?}", sep)),
+                        }
+                        print!("{}", expr.eval(state)?);
+                    }
+                    if let Some(last) = last {
+                        match *last {
+                            ',' => print!(" "),
+                            ';' => {},
+                            _ => return Err(anyhow!("Expected ',' or ';', found: {:?}", last)),
+                        }
+                    } else {
+                        println!();
+                    }
+                } else {
+                    println!();
+                }
             }
             Instr::Assign(Expr::Ident(ident), expr) => {
                 state.vars.insert(ident.clone(), expr.eval_to_int(state)?);
@@ -44,6 +55,7 @@ impl<'a> Instr<'a> {
             }
             Instr::Rem(_) => {}
             Instr::Input(expr1, Expr::Ident(ident)) => {
+                // TODO: If the ident ends in $, print a quotation mark before input, and expect a string
                 if let Some(expr) = expr1 {
                     println!("{}", expr.eval(state)?);
                 }

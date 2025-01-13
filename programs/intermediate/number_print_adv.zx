@@ -1,0 +1,6 @@
+100 REM this polite program remembers your name
+110 INPUT n
+120 PRINT "Hello ";n;"!",
+120 PRINT "Hello ";n;"!";
+120 PRINT "Hello ";n;"!"
+130 GO TO 110
